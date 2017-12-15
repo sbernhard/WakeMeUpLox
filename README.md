@@ -19,6 +19,8 @@ The challenge is, how to get the Loxone alarm clock events to the android tablet
 # Solution
 Loxone -> Node-RED -> Google Calendar -> Android: Google Calendar -> Android: Alarm Calendar Plus
 
+![WakeMeUpLox-Flow](https://raw.githubusercontent.com/sbernhard/WakeMeUpLox/master/WakeMeUpLox-Flow.png)
+
 Node-RED is installed on a Raspberry Pi - of course :-)
 
 # Usage
