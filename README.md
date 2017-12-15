@@ -24,7 +24,7 @@ Node-RED is installed on a Raspberry Pi - of course :-)
 # Usage
 - Install Node-RED. See: https://nodered.org/docs/getting-started/installation
 - Use Node-RED to add node-red-contrib-google and node-red-contrib-loxone (Manage palette)
-- Import the flow to Node-RED
+- Import the WakeMeUpLox-Flow.json to Node-RED
 - Make sure that you have configured a alarm clock function block in Loxone
 - Setup the Connection to your Loxone (you need to be able to receive a list of rooms / categories). See https://github.com/codmpm/node-red-contrib-loxone
 - Setup the Google Calendar API in Node-RED and set the servcie account json in your Node-RED Google Connection. See: https://www.npmjs.com/package/node-red-contrib-google
