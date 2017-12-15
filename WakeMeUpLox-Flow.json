@@ -1,0 +1,226 @@
+[
+  {
+    "id": "27cdca57.447236",
+    "type": "tab",
+    "label": "AlarmClock",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "b252cea5.d13d5",
+    "type": "loxone-miniserver",
+    "z": "",
+    "host": "192.168.1.100",
+    "port": "80",
+    "enctype": "0",
+    "active": true
+  },
+  {
+    "id": "a0aa6a86.ea2fd8",
+    "type": "google-conn",
+    "z": "",
+    "name": "Google",
+    "key": "PASTE YOUR GOOGLE SERVICE ACCOUNT KEY HERE",
+    "scopes": "https://www.googleapis.com/auth/calendar"
+  },
+  {
+    "id": "1f00934d.369bdd",
+    "type": "google-credentials",
+    "z": "",
+    "displayName": ""
+  },
+  {
+    "id": "66f03f0d.c0d4",
+    "type": "loxone-control-in",
+    "z": "27cdca57.447236",
+    "name": "AlarmClockEntries",
+    "miniserver": "b252cea5.d13d5",
+    "control": "0c89c51a-035a-429b-ffff9ad95db8ae05",
+    "state": "0ec49c0c-03ab-60b0-ffff9ad95db8ae05",
+    "x": 130,
+    "y": 260,
+    "wires": [
+      [
+        "57b351e8.2bc2c",
+        "c2de3d62.c3ff1"
+      ]
+    ]
+  },
+  {
+    "id": "57b351e8.2bc2c",
+    "type": "debug",
+    "z": "27cdca57.447236",
+    "name": "AlarmClockDebug",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 430,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "4d331a79.87ed14",
+    "type": "google",
+    "z": "27cdca57.447236",
+    "name": "AddEvent",
+    "google": "a0aa6a86.ea2fd8",
+    "api": "calendar:v3",
+    "operation": "events.insert",
+    "x": 1760,
+    "y": 540,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "8481045c.32e5a8",
+    "type": "function",
+    "z": "27cdca57.447236",
+    "name": "Setup Add GoogleEvent Msg",
+    "func": "var msgList = [];\n\nfunction pad(number) {\n    if (number < 10) {\n        return '0' + number;\n    }\n    return number;\n}\n\nfunction munichISODateString(d) {\n    return d.getFullYear() + \n        '-' + pad(d.getMonth() + 1) +\n        '-' + pad(d.getDate()) +\n        'T' + pad(d.getHours()) +\n        ':' + pad(d.getMinutes()) +\n        ':' + pad(d.getSeconds()) +\n        '+01:00';\n}\n\n/* \n{\n    \"name\": \"Wecker\",\n    \"isActive\":true,\n    \"alarmTime\":29400,\n    \"modes\": [5,6,7,8,9]\n}\n*/\n\nvar msgTemplate = {\n    payload: { \n        'calendarId': 'YOUR_CALENDAR@gmail.com',\n        'resource': {\n            'start': {\n                \"timeZone\": \"Europe/Berlin\"\n            },\n            'end': {\n                \"timeZone\": \"Europe/Berlin\"\n            },\n            'recurrence': [ 'RRULE:FREQ=WEEKLY;' ]\n        }\n    }\n};\n\nvar token = '#wakemeup';\nvar today = new Date();\nvar todayDayOfMonth = today.getDate();  \n\n// convert table from Loxone to getDay \n// Loxone: Monday is 3, Tuesday is 4, ...\nvar convert = {\n    1: 3,\n    2: 4,\n    3: 5,\n    4: 6,\n    5: 7,\n    6: 8,\n    0: 9\n};\n\nvar alarmClockEntries = flow.get('alarmClockEntries');\n\nfor (var key in alarmClockEntries) {\n    var entry = alarmClockEntries[key];\n    \n    if (entry.isActive === true) {\n        var minSec = entry.alarmTime % (60 *60);\n        var hour = (entry.alarmTime - minSec) / (60 * 60);\n        var min = (minSec / 60);\n       \n        if (entry.modes.length > 0) {\n            for (var i=0; i<7; i++) {\n                var newDay = new Date(today.getTime());\n                newDay.setDate(todayDayOfMonth + i);\n\n                if (entry.modes.indexOf(convert[newDay.getDay()]) >= 0) {\n                    var newMsg = JSON.parse(JSON.stringify(msgTemplate));\n                    var startDateTime = new Date();\n                    var endDateTime;\n                    \n                    newMsg.payload.resource.summary = '#wakemeup ' + entry.name;\n                    \n                    startDateTime.setFullYear(newDay.getFullYear());\n                    startDateTime.setMonth(newDay.getMonth());\n                    startDateTime.setDate(newDay.getDate());\n                    startDateTime.setHours(hour);\n                    startDateTime.setMinutes(min);\n                    startDateTime.setSeconds(0);\n                    startDateTime.setMilliseconds(0);\n                    startDateTime.toISOString();\n\n                    endDateTime = new Date(startDateTime.getTime());\n                    endDateTime.setSeconds(30);                        \n\n                    newMsg.payload.resource.start.dateTime = munichISODateString(startDateTime);\n                    newMsg.payload.resource.end.dateTime = munichISODateString(endDateTime);\n                    msgList.push(newMsg);\n                }\n            }\n        }\n   }\n}\n\nreturn [ msgList ];",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 1520,
+    "y": 520,
+    "wires": [
+      [
+        "4d331a79.87ed14",
+        "4b1120aa.8635c"
+      ]
+    ]
+  },
+  {
+    "id": "fabfd188.5c6dc",
+    "type": "google",
+    "z": "27cdca57.447236",
+    "name": "DeleteEvent",
+    "google": "a0aa6a86.ea2fd8",
+    "api": "calendar:v3",
+    "operation": "events.delete",
+    "x": 1550,
+    "y": 420,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "1f174f93.ae2a",
+    "type": "google",
+    "z": "27cdca57.447236",
+    "name": "ListEvents",
+    "google": "a0aa6a86.ea2fd8",
+    "api": "calendar:v3",
+    "operation": "events.list",
+    "x": 1010,
+    "y": 260,
+    "wires": [
+      [
+        "32a38699.c49b2a"
+      ]
+    ]
+  },
+  {
+    "id": "6f8439e6.b54c88",
+    "type": "function",
+    "z": "27cdca57.447236",
+    "name": "Set Calendar ID and Set Context",
+    "func": "if (!msg.payload.hasOwnProperty('init')) {\n    prevAllEvents = flow.get('allEvents')\n\n    if (prevAllEvents !== null) {\n        newAllEvents = prevAllEvents.concat(msg.payload.items)\n        flow.set('allEvents', newAllEvents);\n    } else {\n        flow.set('allEvents', msg.payload.items);\n    }\n}\n\nvar newMsg = {\n    payload: { \n        'calendarId': 'YOUR_CALENDAR@gmail.com',\n        'maxResults': 2500,\n        'showDeleted': false\n    }\n};\n\nif (msg.payload.hasOwnProperty(\"nextPageToken\")) {\n    newMsg.payload[\"pageToken\"] = msg.payload.nextPageToken;\n    node.log(\"Use pageToken: \" + msg.payload.nextPageToken);\n}\n\nmsg = newMsg;\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 700,
+    "y": 260,
+    "wires": [
+      [
+        "1f174f93.ae2a"
+      ]
+    ]
+  },
+  {
+    "id": "ec152403.e6e328",
+    "type": "function",
+    "z": "27cdca57.447236",
+    "name": "LoopEvents",
+    "func": "var msgList = [];\n\nallEvents = flow.get('allEvents');\n\nif (allEvents === null) {\n    allEvents = msg.payload.items;\n} else {\n    allEvents = allEvents.concat(msg.payload.items);\n}\n\nif (allEvents.length > 0) {\n    allEvents.forEach(function(event) {\n        if (event.status !== 'cancelled') {\n            var msg = {\n                payload: { \n                    'calendarId': 'YOUR_CALENDAR@gmail.com',\n                    'eventId': event.id\n                }\n            };\n            node.log(\"Mark \"+ event.id + \" for deletion\");\n            msgList.push(msg);\n        }\n    });\n}\n\nreturn [msgList, {}];",
+    "outputs": "2",
+    "noerr": 0,
+    "x": 1290,
+    "y": 420,
+    "wires": [
+      [
+        "fabfd188.5c6dc",
+        "55dfd541.96334c"
+      ],
+      [
+        "8481045c.32e5a8"
+      ]
+    ]
+  },
+  {
+    "id": "55dfd541.96334c",
+    "type": "debug",
+    "z": "27cdca57.447236",
+    "name": "Debug ListEvents",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 1550,
+    "y": 360,
+    "wires": []
+  },
+  {
+    "id": "4b1120aa.8635c",
+    "type": "debug",
+    "z": "27cdca57.447236",
+    "name": "AddEvent",
+    "active": true,
+    "console": "false",
+    "complete": "payload",
+    "x": 1740,
+    "y": 480,
+    "wires": []
+  },
+  {
+    "id": "32a38699.c49b2a",
+    "type": "switch",
+    "z": "27cdca57.447236",
+    "name": "Handle nextPageToken",
+    "property": "payload.nextPageToken",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "nnull"
+      },
+      {
+        "t": "else"
+      }
+    ],
+    "checkall": "true",
+    "outputs": 2,
+    "x": 990,
+    "y": 400,
+    "wires": [
+      [
+        "6f8439e6.b54c88"
+      ],
+      [
+        "ec152403.e6e328"
+      ]
+    ]
+  },
+  {
+    "id": "c2de3d62.c3ff1",
+    "type": "function",
+    "z": "27cdca57.447236",
+    "name": "SaveAndClear",
+    "func": "flow.set('alarmClockEntries', msg.payload);\nflow.set('allEvents', []);\n\nmsg.payload = { \n    'init': true\n}\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 400,
+    "y": 260,
+    "wires": [
+      [
+        "6f8439e6.b54c88"
+      ]
+    ]
+  }
+]
